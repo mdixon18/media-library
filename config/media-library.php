@@ -25,4 +25,11 @@ return [
      * Lock down routing to a specific middleware, use array for multiple middlewares.
      */
     'middleware' => null,
+
+    /**
+     * If you have put the MediaLibrary::routes() inside a group with a prefix then the download functions
+     * wont work. You will need to ensure you set this value to whatever you've prefixed the routes to.
+     * e.g. /media
+     */
+    'route_path' => null,
 ];
