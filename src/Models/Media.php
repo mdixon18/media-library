@@ -14,7 +14,7 @@ class Media extends BaseMedia
 
     public function downloadUrl()
     {
-        return config('media-library.app_path', '') . "/download/{$this->id}";
+        return url(config('media-library.app_path', '') . "/download/{$this->id}");
     }
 
     public function registerMediaConversions(BaseMedia $media = null)
