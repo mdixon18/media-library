@@ -9,18 +9,7 @@ class MediaLibraryController extends Controller
 {
     public function media()
     {
-        $media = Media::where('collection_name', request('type', 'images'));
-
-        if (request('search') && filled(request('search'))) {
-            $search = request('search');
-            $media->where(function($q) use($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('file_name', 'like', "%{$search}%")
-                    ->orWhere('mime_type', 'like', "%{$search}%")
-                    ->orWhere('alt_text', 'like', "%{$search}%")
-                    ->orWhere('caption', 'like', "%{$search}%");
-            });
-        }
+        $media = Media::where('collection_name', request('type', 'images'))->filterMimes()->search();
 
         $media = $media->orderBy('order_column', 'desc')->orderBy('created_at', 'desc')->paginate(request('pcount', 32));
 
@@ -46,6 +35,34 @@ class MediaLibraryController extends Controller
             'media' => $media->getCollection(),
             'total' => $media->total()
         ]);
+    }
+
+    public function file()
+    {
+        if (request('name')) {
+            $file = Media::where('file_name', request('name'))->first();
+
+            if ($file) {
+                $file->url = $file->getUrl();
+                $file->fullUrl = $file->getFullUrl();
+                $file->downloadUrl = $file->downloadUrl();
+                $file->humanSize = $file->getHumanReadableSizeAttribute();
+
+                if ($file->collection_name == 'images') {
+                    $image = $file->image();
+                    $file->image = [
+                        'width'  => $image->getWidth(),
+                        'height' => $image->getHeight()
+                    ];
+                }
+
+                return response()->json([
+                    'file' => $file,
+                ]);
+            }
+        }
+
+        return response([], 500);
     }
 
     public function save()
@@ -89,10 +106,10 @@ class MediaLibraryController extends Controller
                         return strtolower(str_replace(['#', '/', '\\', ' '], '-', $fileName));
                     });
 
-            if (exif_imagetype( request('file') )) {
-                $media->withResponsiveImages()
-                    ->preservingOriginal();
-            }
+            // if (exif_imagetype( request('file') )) {
+            //     $media->withResponsiveImages()
+            //         ->preservingOriginal();
+            // }
                         
             $media->toMediaCollection(exif_imagetype( request('file') ) ? 'images' : 'files');
 
