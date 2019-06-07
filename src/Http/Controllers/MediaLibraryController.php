@@ -4,6 +4,8 @@ namespace Mdixon18\MediaLibrary\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Mdixon18\MediaLibrary\Models\Media;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MediaLibraryController extends Controller 
 {
@@ -21,6 +23,7 @@ class MediaLibraryController extends Controller
                 $m->humanSize = $m->getHumanReadableSizeAttribute();
 
                 if (request('type', 'images') == 'images') {
+                    $m->dataUrl = 'data:image/' . $m->mime_type . ';base64,' . base64_encode(file_get_contents($m->getFullUrl()));
                     $image = $m->image();
                     $m->image = [
                         'width'  => $image->getWidth(),
@@ -49,6 +52,7 @@ class MediaLibraryController extends Controller
                 $file->humanSize = $file->getHumanReadableSizeAttribute();
 
                 if ($file->collection_name == 'images') {
+                    $file->dataUrl = 'data:image/' . $file->mime_type . ';base64,' . base64_encode(file_get_contents($file->getFullUrl()));
                     $image = $file->image();
                     $file->image = [
                         'width'  => $image->getWidth(),
@@ -98,22 +102,21 @@ class MediaLibraryController extends Controller
         return response([], 500);
     }
 
-    public function upload()
+    public function upload(Request $request)
     {
         try {
+            $test = Media::where('file_name', $request->file('file')->getClientOriginalName())->first();
+            if ($test) {
+                $test->delete();
+            }
+
             $media = Media::addFromRequest('file')
-                    ->sanitizingFileName(function($fileName) {
-                        return strtolower(str_replace(['#', '/', '\\', ' '], '-', $fileName));
-                    });
-
-            // if (exif_imagetype( request('file') )) {
-            //     $media->withResponsiveImages()
-            //         ->preservingOriginal();
-            // }
-                        
-            $media->toMediaCollection(exif_imagetype( request('file') ) ? 'images' : 'files');
-
-            return response()->json(['message' => "The ".request('file')->getClientOriginalName()." file has been uploaded."]);
+                ->sanitizingFileName(function($fileName) {
+                    return strtolower(str_replace(['#', '/', '\\', ' '], '-', $fileName));
+                });
+                    
+            $media->toMediaCollection(exif_imagetype( $request->file('file') ) ? 'images' : 'files');
+            return response()->json(['message' => "The ".$request->file('file')->getClientOriginalName()." file has been uploaded."]);
         } catch (\Throwable $e) {
             return response(['message' => $e->getMessage()], 500);
         }
