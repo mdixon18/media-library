@@ -37,11 +37,11 @@ class MediaLibraryServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__.'/../config/media-library.php' => config_path('media-library.php'),
-        ], 'media-library-config');
+        ], 'config');
 
         $this->publishes([
             __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], 'media-library-migrations');
+        ], 'migrations');
     }
 
     /**
